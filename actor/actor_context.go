@@ -708,7 +708,7 @@ func (ctx *actorContext) EscalateFailure(reason interface{}, message interface{}
 	if ctx.actorSystem.Config.DeveloperSupervisionLogging {
 		fmt.Printf("debug.Stack(): %s\n", debug.Stack())
 		fmt.Println("[Supervision] Actor:", ctx.self, " failed with message:", message, " exception:", reason)
-		ctx.Logger().Error("[Supervision]", slog.Any("actor", ctx.self), slog.Any("message", message), slog.Any("exception", reason))
+		ctx.Logger().Error("[Supervision]", slog.Any("actor", ctx.self), slog.Any("message", message), slog.Any("exception", reason), slog.String("stack", string(debug.Stack())))
 	}
 
 	metricsSystem, ok := ctx.actorSystem.Extensions.Get(extensionId).(*Metrics)
