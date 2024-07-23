@@ -75,6 +75,7 @@ func (pm *Manager) Get(identity *clustering.ClusterIdentity) *actor.PID {
 	ownerAddress := pm.rdv.GetByClusterIdentity(identity)
 
 	if ownerAddress == "" {
+		pm.cluster.Logger().Error("Failed to get PID", slog.Any("identity", identity), slog.Any("error", "ownerAddress is empty"))
 		return nil
 	}
 
@@ -86,6 +87,7 @@ func (pm *Manager) Get(identity *clustering.ClusterIdentity) *actor.PID {
 	future := pm.cluster.ActorSystem.Root.RequestFuture(identityOwnerPid, request, 5*time.Second)
 	res, err := future.Result()
 	if err != nil {
+		pm.cluster.Logger().Error("Failed to get PID", slog.Any("identity", identity), slog.Any("error", err))
 		return nil
 	}
 	typed, ok := res.(*clustering.ActivationResponse)
