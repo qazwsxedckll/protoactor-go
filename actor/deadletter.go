@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"reflect"
 	"strings"
 
 	"github.com/asynkron/protoactor-go/metrics"
@@ -42,7 +43,7 @@ func NewDeadLetter(actorSystem *ActorSystem) *deadLetterProcess {
 
 			if _, isIgnoreDeadLetter := deadLetter.Message.(IgnoreDeadLetterLogging); !isIgnoreDeadLetter {
 				if shouldThrottle() == Open {
-					actorSystem.Logger().Info("[DeadLetter]", slog.Any("pid", deadLetter.PID), slog.Any("message", deadLetter.Message), slog.Any("sender", deadLetter.Sender))
+					actorSystem.Logger().Info("[DeadLetter]", slog.Any("pid", deadLetter.PID), slog.Any("message", deadLetter.Message), slog.String("type", reflect.TypeOf(deadLetter.Message).String()), slog.Any("sender", deadLetter.Sender))
 				}
 			}
 		}
