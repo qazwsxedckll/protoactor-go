@@ -113,6 +113,11 @@ type {{ $service.Name }}Actor struct {
 
 // Receive ensures the lifecycle of the actor for the received message
 func (a *{{ $service.Name }}Actor) Receive(ctx actor.Context) {
+	if a.ctx != nil {
+		if a.ctx.Cluster().Config.RequestLog {
+			a.ctx.Cluster().Logger().Info("Received", "kind", "{{ $service.Name }}", "identity", a.ctx.Self().Id, "type", fmt.Sprintf("%T", ctx.Message()), "message", ctx.Message())
+		}
+	}
 	switch msg := ctx.Message().(type) {
 	case *actor.Started: //pass
 	case *cluster.ClusterInit:
