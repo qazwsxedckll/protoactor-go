@@ -102,5 +102,9 @@ func (p *PubSubMemberDeliveryActor) DeliverToClusterIdentity(c actor.Context, ba
 	// deliver to virtual actor
 	// delivery should always be possible, since a virtual actor always exists
 	pid := cluster.Get(ci.Identity, ci.Kind)
+	if pid == nil {
+		c.Logger().Error("Delivery failed: cluster identity not found", slog.String("cluster identity", ci.String()))
+		return nil
+	}
 	return c.RequestFuture(pid, batch, p.subscriberTimeout)
 }
