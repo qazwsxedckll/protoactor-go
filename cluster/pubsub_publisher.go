@@ -24,6 +24,8 @@ type Publisher interface {
 	Publish(ctx context.Context, topic string, message proto.Message, opts ...GrainCallOption) (*PublishResponse, error)
 
 	Logger() *slog.Logger
+
+	HasSubscribers(ctx context.Context, topic string) (bool, error)
 }
 
 type defaultPublisher struct {
@@ -72,4 +74,17 @@ func (p *defaultPublisher) Publish(ctx context.Context, topic string, message pr
 	return p.PublishBatch(ctx, topic, &PubSubBatch{
 		Envelopes: []proto.Message{message},
 	}, opts...)
+}
+
+func (p *defaultPublisher) HasSubscribers(ctx context.Context, topic string) (bool, error) {
+	select {
+	case <-ctx.Done():
+		return false, ctx.Err()
+	default:
+		res, err := p.cluster.Request(topic, TopicActorKind, &HasSubscribersRequest{})
+		if err != nil {
+			return false, err
+		}
+		return res.(*HasSubscribersResponse).HasSubscribers, nil
+	}
 }

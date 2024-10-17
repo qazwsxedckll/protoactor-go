@@ -50,6 +50,8 @@ func (t *TopicActor) Receive(c actor.Context) {
 		t.onNotifyAboutFailingSubscribers(c, msg)
 	case *ClusterTopology:
 		t.onClusterTopologyChanged(c, msg)
+	case *HasSubscribersRequest:
+		t.onHasSubscribers(c)
 	}
 }
 
@@ -281,6 +283,11 @@ func (t *TopicActor) onSubscribe(c actor.Context, msg *SubscribeRequest) {
 	c.Logger().Debug("Topic subscribed", slog.String("topic", t.topic), slog.Any("subscriber", msg.Subscriber))
 	t.saveSubscriptionsInTopicActor(c.Logger())
 	c.Respond(&SubscribeResponse{})
+}
+
+func (t *TopicActor) onHasSubscribers(c actor.Context) {
+	hasSubscribers := len(t.subscribers) > 0
+	c.Respond(&HasSubscribersResponse{HasSubscribers: hasSubscribers})
 }
 
 // pidStruct is a struct that represents a PID

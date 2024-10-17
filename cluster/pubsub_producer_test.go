@@ -317,6 +317,10 @@ func (m *mockPublisher) Publish(_ context.Context, topic string, message proto.M
 	return m.publish(&PubSubBatch{Envelopes: []proto.Message{message}})
 }
 
+func (m *mockPublisher) HasSubscribers(_ context.Context, topic string) (bool, error) {
+	return true, nil
+}
+
 type optionalFailureMockPublisher struct {
 	sentBatches []*PubSubBatch
 	shouldFail  bool
@@ -348,6 +352,10 @@ func (o *optionalFailureMockPublisher) PublishBatch(ctx context.Context, topic s
 
 func (o *optionalFailureMockPublisher) Publish(ctx context.Context, topic string, message proto.Message, opts ...GrainCallOption) (*PublishResponse, error) {
 	return o.PublishBatch(ctx, topic, &PubSubBatch{Envelopes: []proto.Message{message}}, opts...)
+}
+
+func (o *optionalFailureMockPublisher) HasSubscribers(ctx context.Context, topic string) (bool, error) {
+	return true, nil
 }
 
 type testException struct{}

@@ -1,10 +1,11 @@
 syntax = "proto3";
 package cluster;
-option go_package = "/github.com/asynkron/protoactor-go/cluster";
 
+import "actor.proto";
 import "cluster.proto";
 import "google/protobuf/duration.proto";
-import "actor.proto";
+
+option go_package = "/github.com/asynkron/protoactor-go/cluster";
 
 // Identifies a subscriber by either ClusterIdentity or PID
 message SubscriberIdentity {
@@ -41,6 +42,12 @@ message UnsubscribeRequest {
 
 // Unsubscribe acknowledgement
 message UnsubscribeResponse {}
+
+message HasSubscribersRequest {}
+
+message HasSubscribersResponse {
+  bool has_subscribers = 1;
+}
 
 // Message sent from publisher to topic actor
 // See also PubSubBatch
