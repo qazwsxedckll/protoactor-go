@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"sync/atomic"
 )
 
@@ -17,7 +18,14 @@ func NewActorProcess(mailbox Mailbox) *ActorProcess {
 	}
 }
 
-func (ref *ActorProcess) SendUserMessage(_ *PID, message interface{}) {
+func (ref *ActorProcess) SendUserMessage(pid *PID, message interface{}) {
+	if ref.mailbox.UserMessageCount() >= 100000 && ref.mailbox.UserMessageCount()%100000 == 0 {
+		if pid != nil {
+			fmt.Printf("pid: %v, user message count: %v\n", pid.String(), ref.mailbox.UserMessageCount())
+		} else {
+			fmt.Printf("pid: nil, user message count: %v\n", ref.mailbox.UserMessageCount())
+		}
+	}
 	ref.mailbox.PostUserMessage(message)
 }
 

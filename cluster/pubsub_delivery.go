@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/asynkron/protoactor-go/actor"
@@ -11,6 +12,8 @@ import (
 type PubSubMemberDeliveryActor struct {
 	subscriberTimeout time.Duration
 	shouldThrottle    actor.ShouldThrottle
+	statistics        map[string]int
+	count             int
 }
 
 func NewPubSubMemberDeliveryActor(subscriberTimeout time.Duration, logger *slog.Logger) *PubSubMemberDeliveryActor {
@@ -19,11 +22,40 @@ func NewPubSubMemberDeliveryActor(subscriberTimeout time.Duration, logger *slog.
 		shouldThrottle: actor.NewThrottleWithLogger(logger, 10, time.Second, func(logger *slog.Logger, i int32) {
 			logger.Warn("[PubSubMemberDeliveryActor] Throttled logs", slog.Int("count", int(i)))
 		}),
+		statistics: make(map[string]int),
 	}
+}
+
+type ranking struct {
+	Topic      string
+	Percentage float64
 }
 
 func (p *PubSubMemberDeliveryActor) Receive(c actor.Context) {
 	if batch, ok := c.Message().(*DeliverBatchRequest); ok {
+		p.count++
+		p.statistics[batch.Topic]++
+		if p.count >= 1000000 {
+
+			rank := make([]ranking, 0, len(p.statistics))
+
+			for topic, count := range p.statistics {
+				rank = append(rank, ranking{Topic: topic, Percentage: float64(count) / float64(p.count) * 100})
+			}
+
+			sort.Slice(rank, func(i, j int) bool {
+				return rank[i].Percentage > rank[j].Percentage
+			})
+
+			top := 10
+			if len(rank) < top {
+				top = len(rank)
+			}
+			c.Logger().Info("PubSubMemberDeliveryActor statistics", slog.Int("unique_topics", len(rank)), slog.Any("top_topics", rank[:top]))
+
+			p.count = 0
+			p.statistics = make(map[string]int)
+		}
 		topicBatch := &PubSubAutoRespondBatch{Envelopes: batch.PubSubBatch.Envelopes}
 		siList := batch.Subscribers.Subscribers
 
