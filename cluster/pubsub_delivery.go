@@ -13,7 +13,7 @@ type PubSubMemberDeliveryActor struct {
 	subscriberTimeout time.Duration
 	shouldThrottle    actor.ShouldThrottle
 	statistics        map[string]int
-	count             int
+	lastStatistics    time.Time
 }
 
 func NewPubSubMemberDeliveryActor(subscriberTimeout time.Duration, logger *slog.Logger) *PubSubMemberDeliveryActor {
@@ -26,35 +26,28 @@ func NewPubSubMemberDeliveryActor(subscriberTimeout time.Duration, logger *slog.
 	}
 }
 
-type ranking struct {
-	Topic      string
-	Percentage float64
-}
-
 func (p *PubSubMemberDeliveryActor) Receive(c actor.Context) {
 	if batch, ok := c.Message().(*DeliverBatchRequest); ok {
-		p.count++
 		p.statistics[batch.Topic]++
-		if p.count >= 1000000 {
-
-			rank := make([]ranking, 0, len(p.statistics))
+		if time.Since(p.lastStatistics) > 1*time.Minute {
+			pairs := make([][2]interface{}, 0, len(p.statistics))
 
 			for topic, count := range p.statistics {
-				rank = append(rank, ranking{Topic: topic, Percentage: float64(count) / float64(p.count) * 100})
+				pairs = append(pairs, [2]interface{}{topic, count})
 			}
 
-			sort.Slice(rank, func(i, j int) bool {
-				return rank[i].Percentage > rank[j].Percentage
+			sort.Slice(pairs, func(i, j int) bool {
+				return pairs[i][1].(int) > pairs[j][1].(int)
 			})
 
 			top := 10
-			if len(rank) < top {
-				top = len(rank)
+			if len(pairs) < top {
+				top = len(pairs)
 			}
-			c.Logger().Info("PubSubMemberDeliveryActor statistics", slog.Int("unique_topics", len(rank)), slog.Any("top_topics", rank[:top]))
+			c.Logger().Info("PubSubMemberDeliveryActor statistics", slog.Int("unique_topics", len(pairs)), slog.Any("top_topics", pairs[:top]))
 
-			p.count = 0
 			p.statistics = make(map[string]int)
+			p.lastStatistics = time.Now()
 		}
 		topicBatch := &PubSubAutoRespondBatch{Envelopes: batch.PubSubBatch.Envelopes}
 		siList := batch.Subscribers.Subscribers
