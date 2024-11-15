@@ -66,3 +66,7 @@ func (c *PidCacheValue) RemoveByMember(member *Member) {
 		}
 	}
 }
+
+func (c *PidCacheValue) Clear() {
+	c.cache.Clear()
+}

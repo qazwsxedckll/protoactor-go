@@ -58,10 +58,8 @@ func New(actorSystem *actor.ActorSystem, config *Config) *Cluster {
 
 func (c *Cluster) subscribeToTopologyEvents() {
 	c.ActorSystem.EventStream.Subscribe(func(evt interface{}) {
-		if clusterTopology, ok := evt.(*ClusterTopology); ok {
-			for _, member := range clusterTopology.Left {
-				c.PidCache.RemoveByMember(member)
-			}
+		if _, ok := evt.(*ClusterTopology); ok {
+			c.PidCache.Clear()
 		}
 	})
 }
